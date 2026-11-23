@@ -1,0 +1,72 @@
+name: Update ReaConvert
+
+# Detect when the pinned ReaConvert submodule is behind ReaConvert's main,
+# bump the gitlink, push, and cut a new tag. The tag push triggers build.yml,
+# which produces the binaries and publishes the release.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-reacconvert
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update submodule and cut release tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin --tags --force
+
+          SUB=extern/ReaConvert
+
+          # Check out the currently pinned commit, then fetch upstream.
+          git submodule update --init "$SUB"
+          git -C "$SUB" fetch origin
+
+          LATEST=$(git -C "$SUB" rev-parse origin/main)
+          CURRENT=$(git -C "$SUB" rev-parse HEAD)
+          echo "Pinned : $CURRENT"
+          echo "Upstream: $LATEST"
+
+          if [ "$CURRENT" = "$LATEST" ]; then
+            echo "ReaConvert is up to date. Nothing to do."
+            exit 0
+          fi
+
+          # Move the submodule pointer to the latest commit.
+          git -C "$SUB" checkout "$LATEST"
+          SHORT=$(git -C "$SUB" rev-parse --short HEAD)
+          git add "$SUB"
+          git commit -m "Update ReaConvert to ${SHORT}"
+          git push origin HEAD:main
+
+          # Cut the next tag from the most recent release tag on this line.
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          echo "Latest tag: ${LATEST_TAG:-<none>}"
+          if [[ "$LATEST_TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            NEW_TAG="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$(( BASH_REMATCH[3] + 1 ))"
+          elif [[ "$LATEST_TAG" =~ ^v([0-9]+)\.([0-9]+)$ ]]; then
+            NEW_TAG="v${BASH_REMATCH[1]}.$(( BASH_REMATCH[2] + 1 ))"
+          else
+            NEW_TAG="v1.0.1"
+          fi
+
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"
+          echo "Pushed ${NEW_TAG} - build workflow will run."
