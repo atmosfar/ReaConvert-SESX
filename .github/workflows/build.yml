@@ -40,7 +40,10 @@ jobs:
           path: build/reaper_sesx_convert-x86_64.dylib
 
   build-windows:
-    runs-on: windows-latest
+    # windows-latest is now the Windows Server 2025 / VS 2026 image, which has
+    # no Visual Studio 2022 for the generator below. Pin the 2022 image to match
+    # the documented build environment.
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
         with:
