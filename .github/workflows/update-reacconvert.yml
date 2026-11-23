@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: update-reacconvert
@@ -69,4 +70,10 @@ jobs:
 
           git tag "$NEW_TAG"
           git push origin "$NEW_TAG"
-          echo "Pushed ${NEW_TAG} - build workflow will run."
+          echo "Pushed ${NEW_TAG}."
+
+          # A tag push made with the GITHUB_TOKEN does not trigger push-based
+          # workflows, so dispatch the Build workflow explicitly against main
+          # (which now carries the updated submodule pointer).
+          echo "Dispatching Build workflow for ${NEW_TAG}..."
+          gh workflow run "Build" -f "tag=${NEW_TAG}"
