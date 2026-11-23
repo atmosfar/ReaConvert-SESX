@@ -1,0 +1,85 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos-arm64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure
+        run: cmake -B build .
+      - name: Build
+        run: cmake --build build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reaper_sesx_convert-arm64.dylib
+          path: build/reaper_sesx_convert-arm64.dylib
+
+  build-macos-x86_64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure
+        run: cmake -B build -DCMAKE_OSX_ARCHITECTURES=x86_64 .
+      - name: Build
+        run: cmake --build build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reaper_sesx_convert-x86_64.dylib
+          path: build/reaper_sesx_convert-x86_64.dylib
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure
+        run: cmake -G "Visual Studio 17 2022" -A x64 -B build .
+      - name: Build
+        run: cmake --build build --config Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reaper_sesx_convert-x64.dll
+          path: build/Release/reaper_sesx_convert-x64.dll
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
+      - name: Configure
+        run: cmake -B build .
+      - name: Build
+        run: cmake --build build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reaper_sesx_convert-x86_64.so
+          path: build/reaper_sesx_convert-x86_64.so
+
+  release:
+    needs: [build-macos-arm64, build-macos-x86_64, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
