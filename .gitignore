@@ -1,0 +1,60 @@
+# Build artifacts
+build/
+bin/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs and results
+*.log
+verification_results.log
+export_verification_results.log
+
+# Temporary / data files
+*.bin
+*.plist
+chunks.txt
+*.sesx-bak
+test_*.sesx
+
+# IDE / Editor files
+.nvimlog
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific artifacts
+Screenshot*.png
+full_izotope.json
+
+# Local-only working copies of reference material and agent tooling
+*.skill
+audition-sesx-schema/
+reaper-sdk-expert/
+rpp-chunk-expert/
+conductor/
+
+# Local scratch tests (no test targets in CMakeLists.txt)
+tests/
+
+# Archives and build logs
+sesx-convert.zip
+zip/
+buildlog
+
+# Compiled binaries outside the build dir
+test_fx_verification
